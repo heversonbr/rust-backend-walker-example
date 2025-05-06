@@ -1,1 +1,1 @@
-= Building backends with Rust
+= Building backend with Rust
