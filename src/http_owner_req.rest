@@ -1,0 +1,79 @@
+# These are the API requests used to test the backend 
+
+@baseUrl = http://localhost:8080
+
+#**********************
+# *** OWNER *** 
+#**********************
+
+#----------------------
+# CREATE new Owner 
+// -> receive POST method on /owners + a Json OwnerRequest obj
+#----------------------
+###
+POST {{baseUrl}}/owners HTTP/1.1
+Content-Type: application/json
+
+  {
+    "name": "eva",
+    "email": "eva@woof.net",
+    "phone": "111222",
+    "address": "bordeaux"
+  }
+
+###
+
+#----------------------
+# READ: Get ALL Owners from the Owner Collection 
+//      -> receive GET method on /owners
+#----------------------
+###
+
+GET {{baseUrl}}/owners
+Content-Type: application/json
+###
+
+#----------------------
+# READ: Get a single Owner from the Owner Collection 
+//      -> receive GET method on /owners/{id}
+#----------------------
+###
+# @read_owner_id=68163e5742b784266124d513
+# @read_@owner_id=6814c47d8aef1b781ca7e9e1
+@read_owner_id=6814c47d8aef1b781ca7e9e1
+
+GET {{baseUrl}}/owners/{{read_owner_id}}
+Content-Type: application/json
+###
+
+
+#----------------------
+# UPDATE: Update any of the fields of a specific Document at Owner Collection
+//         -> receive PUT method on /owners/{id} 
+//            + a Json data representing a OwnerUpdateRequest Object
+#----------------------
+###
+#change this variable to test:
+@update_owner_id=6814c47d8aef1b781ca7e9e1
+
+PUT {{baseUrl}}/owners/{{update_owner_id}}
+Content-Type: application/json
+
+  {
+    //"name": "Nadine",
+    //"email": "nadine@nadine.com",
+    "phone": "0707070707"
+    //"address": "Morlaix"
+  }
+###
+
+#----------------------
+# DELETE: Delete a specific owner using its identifier id
+//        -> receive DELETE method on /owners/{id}
+#----------------------
+###
+@delete_owner_id=68163e6e42b784266124d515
+
+DELETE {{baseUrl}}/owners/{{delete_owner_id}}
+Content-Type: application/json
+###

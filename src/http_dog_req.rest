@@ -1,0 +1,75 @@
+# These are the API requests used to test the backend 
+
+@baseUrl = http://localhost:8080
+
+#**********************
+# *** DOG *** 
+#**********************
+
+#----------------------
+# CREATE a new Dog 
+//      -> receive POST method on /dogs 
+//      + Json data representing a DogRequest Object
+#----------------------
+###
+POST {{baseUrl}}/dogs HTTP/1.1
+Content-Type: application/json
+
+  {
+    "owner": "68163e6e42b784266124d515",
+    "name": "Charlie",
+    "age": 6,
+    "breed": "Poodle"
+  }
+###
+
+#----------------------
+# READ: Get all Dogs from the Dog Collection 
+//      -> receive GET method on /dogs
+#----------------------
+###
+GET {{baseUrl}}/dogs
+Content-Type: application/json
+###
+
+#----------------------
+# READ: Get a single Dog from the dog Collection 
+//      -> receive GET method on /dogs/{id} 
+#----------------------
+###
+@read_dog_id=6812a5dd89fd46e7bc07c6e8
+
+GET {{baseUrl}}/dogs/{{read_dog_id}}
+Content-Type: application/json
+###
+
+
+#----------------------
+// UPDATE: Update specific Dog
+//        receive PUT method on /dogs/{id} 
+//        + a Json data representing a DogUpdateRequest Object
+#----------------------
+###
+@dog_update_id=6816405d42b784266124d518
+
+PUT {{baseUrl}}/dogs/{{dog_update_id}} HTTP/1.1
+Content-Type: application/json
+
+  {
+//    "owner": "68163e6e42b784266124d515",
+//    "name": "Charlie",
+    "age": 10,
+    "breed": "Poodle"
+  }
+###
+
+#----------------------
+# DELETE: a specific Dog
+//        -> receive DELETE method on /dogs/{id}
+#----------------------
+###
+@dog_remove_id=6816405d42b784266124d518   
+
+DELETE {{baseUrl}}/dogs/{{dog_remove_id}} HTTP/1.1
+Content-Type: application/json
+###

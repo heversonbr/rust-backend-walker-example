@@ -1,0 +1,15 @@
+[package]
+name = "breizh-app-walker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4.10.2"
+chrono = "0.4.15"
+dotenv = "0.15.0"
+futures = "0.3.31"
+mongodb = "3.2.3"
+serde = "1.0.219"
+validator = { version = "0.19", features = ["derive"] }
+bson = { version = "2.8.0", features = ["chrono-0_4"] }
+

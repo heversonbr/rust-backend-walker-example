@@ -1,0 +1,84 @@
+# These are the API requests used to test the backend 
+
+@baseUrl = http://localhost:8080
+
+
+
+#**********************
+# *** BOOKING *** 
+#**********************
+
+###
+#----------------------
+# CREATE a new Booking 
+//      -> receive POST method on /bookings 
+//      + Json data representing a BookingRequest Object
+#----------------------
+###
+
+POST {{baseUrl}}/bookings HTTP/1.1
+Content-Type: application/json
+
+  {
+    "owner": "6814c47d8aef1b781ca7e9e1",
+    "start_time": "2025-07-05T11:30:00Z",   
+    "duration_minutes": 60,                 
+    "cancelled": false
+  }
+###
+
+
+#----------------------
+# READ: List ALL bookings from Booking Collection 
+//       -> receive GET method on /bookings
+#----------------------
+###
+
+GET {{baseUrl}}/bookings
+Content-Type: application/json
+###
+
+#----------------------
+# READ: List a spcific Booking, from Booking Collection 
+//       -> receive GET method on /bookings/{id} 
+#----------------------
+
+###
+@booking_read_id=68192d9c2cc21253738b2a36   
+
+GET {{baseUrl}}/bookings/{{booking_read_id}} HTTP/1.1
+Content-Type: application/json
+###
+
+#----------------------
+# UPDATE: Update a specific Booking
+//       receive PUT method on /bookings/{id}  
+//       + a Json data representing a BookingUpdateRequest Object
+#----------------------
+###
+@booking_update_id=68192eef2cc21253738b2a37  
+
+PUT {{baseUrl}}/bookings/{{booking_update_id}} HTTP/1.1
+Content-Type: application/json
+
+  {
+    "owner": "6814c4958aef1b781ca7e9e2",        
+    //"start_time": "2025-05-05T15:30:00Z", // RFC3339 datetime string
+    "duration_minutes": 30
+    // "cancelled": false,
+  }
+###
+
+#----------------------
+# DELETE: Delete a specific Booking
+//       -> receive DELETE method on /bookings/{id}
+#----------------------
+
+###
+@delete_booking_id=68192eef2cc21253738b2a37 
+
+DELETE {{baseUrl}}/bookings/{{delete_booking_id}} HTTP/1.1
+Content-Type: application/json
+
+###
+
