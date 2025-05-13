@@ -1,7 +1,10 @@
 use actix_web::{delete, get, post, put, web::{self, Json}, HttpResponse};
+
 use crate::{json_response::api_responses::{ErrorJsonApiResponse, JsonApiResponse}, 
-            models::owner_model::{Owner, OwnerRequest, OwnerResponse, OwnerUpdateRequest}};
-use crate::services::db::Database;
+            models::owner_model::{Owner, OwnerRequest, OwnerResponse, OwnerUpdateRequest}, };
+use crate::services::owners;
+
+use crate::services::db::AppDatabase;// ← again, use the actual type
 
 
 // API Route Naming Guidelines (Memo)
@@ -45,7 +48,10 @@ use crate::services::db::Database;
 // CREATE 
 // Create Owner -> receive POST method on /owners + a Json OwnerRequest obj
 #[post("/owners")]
-pub async fn create_owner(db: web::Data<Database>, request: Result<Json<OwnerRequest>, actix_web::Error> ) -> HttpResponse {
+pub async fn create_owner(
+        db: web::Data<AppDatabase>,   // ← must match exac
+        request: Result<Json<OwnerRequest>, 
+        actix_web::Error> ) -> HttpResponse {
     // Json is wrapped by a Result to allow validating the request locally here. 
     println!("CREATE ROUTER");
     //let owner_req = request.into_inner();  // request data is of type web::Json<MyStruct>,  Json<OwnerRequest> in this case, into_inner() unwraps into inner 'T' value
@@ -65,7 +71,7 @@ pub async fn create_owner(db: web::Data<Database>, request: Result<Json<OwnerReq
     };
 
     println!("CREATE ROUTER: calling create_owner...");
-    match db.create_owner(validated_owner).await
+    match owners::create_owner(&db, validated_owner).await
     {   // returns an OwnerResponse
         Ok(inserted_owner) => JsonApiResponse::success(OwnerResponse::from(inserted_owner)),
         Err(error) => ErrorJsonApiResponse::internal_server_error(&error.to_string()),
@@ -76,9 +82,9 @@ pub async fn create_owner(db: web::Data<Database>, request: Result<Json<OwnerReq
 // READS
 // List ALL Owners -> receive GET method on /owners
 #[get("/owners")]
-pub async fn list_owners(db: web::Data<Database>) -> HttpResponse {
+pub async fn list_owners(db: web::Data<AppDatabase>) -> HttpResponse {
 
-    match db.read_owners().await {
+    match owners::read_owners(&db).await {
         Ok(vec_owner) => {
             // map the Vec<Owner> received from the database handler 'read_owners' into a vector of OwnerResponse, to avoid exposing mongodb objects
             let owner_responses = vec_owner.into_iter().map(|x| OwnerResponse::from(x)).collect::<Vec<OwnerResponse>>();
@@ -92,12 +98,12 @@ pub async fn list_owners(db: web::Data<Database>) -> HttpResponse {
 
 // List specific Owner -> receive GET method on /owners/{id}
 #[get("/owners/{id}")]
-pub async fn list_owner(path: web::Path<String>, db: web::Data<Database>) -> HttpResponse {
+pub async fn list_owner(path: web::Path<String>, db: web::Data<AppDatabase>) -> HttpResponse {
     
     // id received must be String because it is a Hexadecimal string
     let id_str = path.into_inner();
   
-    match db.read_owner(&id_str).await {
+    match owners::read_owner(&db, &id_str).await {
         Ok(owner) =>  {
            // HttpResponse::Ok().json(OwnerResponse::from(owner))
            JsonApiResponse::success(OwnerResponse::from(owner))
@@ -110,7 +116,7 @@ pub async fn list_owner(path: web::Path<String>, db: web::Data<Database>) -> Htt
 // UPDATES
 // Update specific Owner -> receive PUT method on /owners/{id} + a Json data representing a OwnerUpdateRequest Object
 #[put("/owners/{id}")]
-pub async fn update_owner(path: web::Path<String>, db: web::Data<Database>, request: Result<Json<OwnerUpdateRequest>, actix_web::Error>, ) -> HttpResponse {
+pub async fn update_owner(path: web::Path<String>, db: web::Data<AppDatabase>, request: Result<Json<OwnerUpdateRequest>, actix_web::Error>, ) -> HttpResponse {
     // initially the request wasnt a Result, but I wrapped it into a Result in order to validate it here
    
     // Validating request
@@ -131,7 +137,7 @@ pub async fn update_owner(path: web::Path<String>, db: web::Data<Database>, requ
     println!("Updating id {:?}", owner_id);
 
     // Invoking database layer 
-    match db.update_owner(&owner_id, owner_update).await {
+    match owners::update_owner(&db, &owner_id, owner_update).await {
         Ok(id) => JsonApiResponse::with_message(&format!("Owner Update Sucessful: {}", id)),
         Err(app_error) => ErrorJsonApiResponse::internal_server_error(&app_error.to_string()),
     }
@@ -140,12 +146,12 @@ pub async fn update_owner(path: web::Path<String>, db: web::Data<Database>, requ
 // DELETION
 // Delete specific Owner -> receive DELETE method on /owners/{id}
 #[delete("/owners/{id}")]
-pub async fn delete_owner(path: web::Path<String>, db: web::Data<Database>) -> HttpResponse {
+pub async fn delete_owner(path: web::Path<String>, db: web::Data<AppDatabase>) -> HttpResponse {
 
     let owner_id = path.into_inner();
     println!("Deleting id {:?}", owner_id);
 
-    match db.delete_owner(&owner_id).await {
+    match owners::delete_owner(&db, &owner_id).await {
         Ok(id) => JsonApiResponse::with_message(&format!("Owner Deleted: {}", id)),
         Err(app_error) => ErrorJsonApiResponse::internal_server_error(&app_error.to_string()),
     }

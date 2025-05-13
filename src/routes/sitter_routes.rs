@@ -1,13 +1,17 @@
 use actix_web::{delete, get, post, put, web::{self, Data, Json}, HttpResponse};
-
-use crate::{json_response::api_responses::{ErrorJsonApiResponse, JsonApiResponse}, models::sitter_model::{Sitter, SitterRequest, SitterResponse, SitterUpdateRequest}};
-use crate::services::db::Database;
+use crate::{json_response::api_responses::{ErrorJsonApiResponse, JsonApiResponse}, 
+            models::sitter_model::{Sitter, SitterRequest, SitterResponse, SitterUpdateRequest}, 
+            services::db::AppDatabase};   // ← again, use the actual type
+use crate::services::sitters;
 
 // -----------------------------------
 // CREATE 
 // Create Sitter -> receive POST method on /sitters + a Json SitterRequest obj
 #[post("/sitters")]
-pub async fn create_sitter(db: Data<Database>, request: Result<Json<SitterRequest>, actix_web::Error> ) -> HttpResponse {
+pub async fn create_sitter(
+    db: Data<AppDatabase>, 
+    request: Result<Json<SitterRequest>, 
+    actix_web::Error> ) -> HttpResponse {
     
     // let sitter_req = request.into_inner();  // request data is of type web::Json<MyStruct>,  Json<SitterRequest> in this case, into_inner() unwraps into inner 'T' value
     // Validate Request
@@ -26,7 +30,7 @@ pub async fn create_sitter(db: Data<Database>, request: Result<Json<SitterReques
     };
 
 
-    match db.create_sitter(validated_sitter).await
+    match sitters::create_sitter(&db, validated_sitter).await
     {   // returns an SitterResponse
         Ok(sitter) => JsonApiResponse::success(SitterResponse::from(sitter)),
         Err(err) => ErrorJsonApiResponse::internal_server_error(&err.to_string()),
@@ -36,9 +40,10 @@ pub async fn create_sitter(db: Data<Database>, request: Result<Json<SitterReques
 // READS
 // List ALL Sitters -> receive GET method on /sitters
 #[get("/sitters")]
-pub async fn list_sitters(db: Data<Database>) -> HttpResponse {
+pub async fn list_sitters(
+    db: Data<AppDatabase>) -> HttpResponse {
 
-    match db.read_sitters().await {
+    match sitters::read_sitters(&db).await {
         Ok(vec_sitter) => {
             // map the Vec<Sitter> received from the database handler 'read_sitters' into a vector of SitterResponse, to avoid exposing mongodb objects
             let sitter_responses = vec_sitter.into_iter().map(|x| SitterResponse::from(x)).collect::<Vec<SitterResponse>>();
@@ -52,11 +57,11 @@ pub async fn list_sitters(db: Data<Database>) -> HttpResponse {
 
 // List specific Sitter -> receive GET method on /sitters/{id}
 #[get("/sitters/{id}")]
-pub async fn list_sitter(path: web::Path<String>, db: web::Data<Database>, ) -> HttpResponse {
+pub async fn list_sitter(path: web::Path<String>, db: web::Data<AppDatabase>, ) -> HttpResponse {
     // id received must be String because it is a Hexadecimal string
     let id_str = path.into_inner();
 
-    match db.read_sitter(&id_str).await {
+    match sitters::read_sitter(&db, &id_str).await {
         Ok(sitter) =>  {
             //HttpResponse::Ok().json(SitterResponse::from(sitter))
             JsonApiResponse::success(SitterResponse::from(sitter))
@@ -69,7 +74,11 @@ pub async fn list_sitter(path: web::Path<String>, db: web::Data<Database>, ) -> 
 // UPDATES
 // Update specific Sitter -> receive PUT method on /sitters/{id} + a Json data representing a SitterUpdateRequest Object
 #[put("/sitters/{id}")]
-pub async fn update_sitter(path: web::Path<String>, db: web::Data<Database>, request: Result<Json<SitterUpdateRequest>, actix_web::Error > ) -> HttpResponse {
+pub async fn update_sitter(
+    path: web::Path<String>, 
+    db: web::Data<AppDatabase>, 
+    request: Result<Json<SitterUpdateRequest>, 
+    actix_web::Error > ) -> HttpResponse {
 
     // Validating Json request format 
     let sitter_update = match request{
@@ -92,7 +101,7 @@ pub async fn update_sitter(path: web::Path<String>, db: web::Data<Database>, req
     println!("Updating id {:?}", &sitter_id);
 
     // Invoking database layer
-    match db.update_sitter(&sitter_id,sitter_update).await {
+    match sitters::update_sitter(&db, &sitter_id,sitter_update).await {
         Ok(id) => JsonApiResponse::with_message(&format!("Sitter Update Sucessful: {}", id)),
         Err(app_error) => ErrorJsonApiResponse::internal_server_error(&app_error.to_string()),
     }
@@ -101,12 +110,12 @@ pub async fn update_sitter(path: web::Path<String>, db: web::Data<Database>, req
 // DELETION
 // Delete specific Sitter -> receive DELETE method on /sitters/{id}
 #[delete("/sitters/{id}")]
-pub async fn delete_sitter(path: web::Path<String>, db: web::Data<Database>) -> HttpResponse {
+pub async fn delete_sitter(path: web::Path<String>, db: web::Data<AppDatabase>) -> HttpResponse {
 
     let sitter_id = path.into_inner();
     println!("Deleting id {:?}", sitter_id);
 
-    match db.delete_sitter(&sitter_id).await {
+    match sitters::delete_sitter(&db, &sitter_id).await {
         Ok(id) => JsonApiResponse::with_message(&format!("Sitter Deleted: {}", id)),
         Err(app_error) => ErrorJsonApiResponse::internal_server_error(&app_error.to_string()),
 

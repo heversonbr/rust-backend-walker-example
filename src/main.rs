@@ -27,9 +27,9 @@ async fn hello() -> impl Responder{
 }
 
 fn set_logger() {
-    let mut builder = Builder::new();                // Setup config
+    let mut builder = Builder::new();        // Setup config
     builder.target(Target::Stdout);                  // Set output to stdout
-    builder.filter_level(LevelFilter::Debug);         // Choose level
+    builder.filter_level(LevelFilter::max());        // Choose level
     builder.init();                                  // Register global logger
 } // builder is dropped here — but the logger is now active globally
 
@@ -44,14 +44,14 @@ async fn main() -> std::io::Result<()> {
     let address = "localhost";
     let port = 8080;
 
-    let db = services::db::Database::init().await;
-    let db_data = web::Data::new(db);        // type: web::Data<mongodb::Database>
+    let db = services::db::AppDatabase::init().await;
+    let db_data = web::Data::new(db);        // type: web::Data<service::db::AppDatabase>
 
     info!("Starting server at {} , port: {}", address, port);
     HttpServer::new(move || App::new()
         .app_data(db_data.clone())     // register it here 
         .service(create_owner)
-        //.service(list_owners)
+        .service(list_owners)
         .service(list_owner)
         .service(update_owner)
         .service(delete_owner)

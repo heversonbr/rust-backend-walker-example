@@ -1,13 +1,19 @@
 use actix_web::{web::{self, Json}, HttpResponse};
-use crate::{json_response::api_responses::{ErrorJsonApiResponse, JsonApiResponse}, models::{booking_model::{Booking, BookingRequest, BookingResponse,BookingUpdateRequest}}};
-use crate::services::db::Database;
+use crate::{json_response::api_responses::{ErrorJsonApiResponse, JsonApiResponse}, 
+            models::booking_model::{Booking, BookingRequest, BookingResponse,BookingUpdateRequest}, services::bookings};
+
+//use mongodb::AppDatabase; 
+use crate::services::db::AppDatabase;  //  ← again, use the actual type
 
 
 // -----------------------------------
 // CREATE 
 // Create Booking -> receive POST method on /bookings  with Json data representing a BookingRequest Object
 #[actix_web::post("/bookings")]
-pub async fn create_booking(db: web::Data<Database>, request: Result<web::Json<BookingRequest>, actix_web::Error> ) -> HttpResponse {
+pub async fn create_booking(
+    db: web::Data<AppDatabase>, 
+    request: Result<web::Json<BookingRequest>, 
+    actix_web::Error> ) -> HttpResponse {
     println!("Creating new Booking");
 
     //let booking_req = request.into_inner();
@@ -29,7 +35,7 @@ pub async fn create_booking(db: web::Data<Database>, request: Result<web::Json<B
     // because Booking structure is already validated and an error is propagated if errors happen.
     // we use the validated_booking next, instead of  // Booking::try_from(booking_req ).expect("Error converting BookingRequest to Booking.")
 
-    match db.create_booking(validated_booking).await {
+    match bookings::create_booking(&db, validated_booking).await {
         //Ok(booking) => HttpResponse::Ok().json(BookingResponse::from(booking)), 
         Ok(inserted_booking) => JsonApiResponse::success(BookingResponse::from(inserted_booking)),
         //Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
@@ -41,10 +47,10 @@ pub async fn create_booking(db: web::Data<Database>, request: Result<web::Json<B
 // READS
 // LIST Bookings  -> receive GET method on /bookings
 #[actix_web::get("/bookings")]
-pub async fn list_bookings(db: web::Data<Database>) -> HttpResponse {
+pub async fn list_bookings(db: web::Data<AppDatabase>) -> HttpResponse {
     println!("Reading all Bookings");
 
-    match db.read_bookings().await {
+    match bookings::read_bookings(&db).await {
         Ok(booking) => {
             let booking_responses = booking.into_iter().map(|x| BookingResponse::from(x)).collect::<Vec<BookingResponse>>();
             //HttpResponse::Ok().json(booking_responses)
@@ -57,12 +63,12 @@ pub async fn list_bookings(db: web::Data<Database>) -> HttpResponse {
 
 // List spcific Booking -> receive GET method on /bookings/{id} 
 #[actix_web::get("/bookings/{id}")]
-pub async fn list_booking(path: web::Path<String>, db: web::Data<Database> ) -> HttpResponse {
+pub async fn list_booking(path: web::Path<String>, db: web::Data<AppDatabase> ) -> HttpResponse {
    
     // id received must be String because it is a Hexadecimal string
     let booking_id = path.into_inner();
 
-    match db.read_booking(&booking_id).await {
+    match bookings::read_booking(&db, &booking_id).await {
         Ok(booking ) =>  JsonApiResponse::success(BookingResponse::from(booking)),
         Err(app_error) => ErrorJsonApiResponse::not_found(&app_error.to_string()),
     }
@@ -73,7 +79,7 @@ pub async fn list_booking(path: web::Path<String>, db: web::Data<Database> ) -> 
 // Update specific Booking -> receive PUT method on /bookings/{id}  + a Json data representing a BookingUpdateRequest Object
 
 #[actix_web::put("/bookings/{id}")]
-pub async fn update_booking(path: web::Path<String>, db: web::Data<Database>, request: Result< Json<BookingUpdateRequest>, actix_web::Error> ) -> HttpResponse {
+pub async fn update_booking(path: web::Path<String>, db: web::Data<AppDatabase>, request: Result< Json<BookingUpdateRequest>, actix_web::Error> ) -> HttpResponse {
 
      // Validating request
      let booking_update = match request {
@@ -93,7 +99,7 @@ pub async fn update_booking(path: web::Path<String>, db: web::Data<Database>, re
     let booking_id = path.into_inner();
     
      // Invoking database layer 
-    match db.update_booking(&booking_id, booking_update).await {
+    match bookings::update_booking(&db, &booking_id, booking_update).await {
         Ok(id) => JsonApiResponse::with_message(&format!("Booking Update Sucessful: {}", id)),
         Err(app_error) => ErrorJsonApiResponse::internal_server_error(&app_error.to_string()),
     }
@@ -103,12 +109,12 @@ pub async fn update_booking(path: web::Path<String>, db: web::Data<Database>, re
 // DELETION
 // Delete specific Booking -> receive DELETE method on /bookings/{id}
 #[actix_web::delete("/bookings/{id}")]
-pub async fn delete_booking(path: web::Path<String>, db: web::Data<Database>) -> HttpResponse {
+pub async fn delete_booking(path: web::Path<String>, db: web::Data<AppDatabase>) -> HttpResponse {
 
     let booking_id = path.into_inner();
     println!("Deleting id {:?}", booking_id);
 
-    match db.delete_booking(&booking_id).await {
+    match bookings::delete_booking(&db, &booking_id).await {
         Ok(id) => JsonApiResponse::with_message(&format!("Booking Deleted: {}", id)),
         Err(app_error) => ErrorJsonApiResponse::internal_server_error(&app_error.to_string()),
     }

@@ -54,16 +54,16 @@ Content-Type: application/json
 #----------------------
 ###
 #change this variable to test:
-@update_owner_id=6814c47d8aef1b781ca7e9e1
+@update_owner_id=681dc7ce9b5a55eaf9924528
 
 PUT {{baseUrl}}/owners/{{update_owner_id}}
 Content-Type: application/json
 
   {
-    "name": "Nico",
-    "email": "nico@nico.com",
-    "phone": "1111111111",
-    "address": "Bruz"
+  //  "name": "Nico",
+  //  "email": "nico@nico.com",
+    //"phone": "1111111111",
+    "address": "Caiscais"
   }
 ###
 
@@ -72,7 +72,7 @@ Content-Type: application/json
 //        -> receive DELETE method on /owners/{id}
 #----------------------
 ###
-@delete_owner_id=681b71f0795a6b1379e97178
+@delete_owner_id=68235ac99c0248084e52e03d
 
 DELETE {{baseUrl}}/owners/{{delete_owner_id}}
 Content-Type: application/json
