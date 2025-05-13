@@ -1,6 +1,6 @@
-use actix_web::{delete, get, post, put, web::{self, Data, Json}, HttpResponse};
-
-use crate::models::owner_model::{Owner, OwnerRequest, OwnerResponse, OwnerUpdateRequest};
+use actix_web::{delete, get, post, put, web::{self, Json}, HttpResponse};
+use crate::{json_response::api_responses::{ErrorJsonApiResponse, JsonApiResponse}, 
+            models::owner_model::{Owner, OwnerRequest, OwnerResponse, OwnerUpdateRequest}};
 use crate::services::db::Database;
 
 
@@ -45,60 +45,95 @@ use crate::services::db::Database;
 // CREATE 
 // Create Owner -> receive POST method on /owners + a Json OwnerRequest obj
 #[post("/owners")]
-pub async fn create_owner(db: Data<Database>, request: Json<OwnerRequest> ) -> HttpResponse {
+pub async fn create_owner(db: web::Data<Database>, request: Result<Json<OwnerRequest>, actix_web::Error> ) -> HttpResponse {
+    // Json is wrapped by a Result to allow validating the request locally here. 
+    println!("CREATE ROUTER");
+    //let owner_req = request.into_inner();  // request data is of type web::Json<MyStruct>,  Json<OwnerRequest> in this case, into_inner() unwraps into inner 'T' value
+    // Validate Request
+    let owner_req = match request {
+        Ok(valid_json) => valid_json.into_inner(),
+        Err(e) => {
+            println!("JSON error: {:?}", e);
+            return ErrorJsonApiResponse::bad_request("Invalid input. Missing required fields or wrong types.");
+        }
+    };  // request data is of type web::Json<MyStruct>,  Json<OwnerRequest> in this case, into_inner() unwraps into inner 'T' value
     
-    let owner_req = request.into_inner();  // request data is of type web::Json<MyStruct>,  Json<OwnerRequest> in this case, into_inner() unwraps into inner 'T' value
-    match db.create_owner(
-        Owner::try_from(
-            owner_req
-            ).expect("Error converting DogRequest to Owner.")
-    ).await
+    // Convert OwnerRequest to Owner and Validate Convertion
+    let validated_owner = match Owner::try_from(owner_req) {
+        Ok(owner) => owner,
+        Err(_e) => return ErrorJsonApiResponse::bad_request("Invalid Owner: Error converting OwnerRequest to Owner."),
+    };
+
+    println!("CREATE ROUTER: calling create_owner...");
+    match db.create_owner(validated_owner).await
     {   // returns an OwnerResponse
-        Ok(owner) => HttpResponse::Ok().json(OwnerResponse::from(owner)),
-        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+        Ok(inserted_owner) => JsonApiResponse::success(OwnerResponse::from(inserted_owner)),
+        Err(error) => ErrorJsonApiResponse::internal_server_error(&error.to_string()),
     }
+
 }
 // -----------------------------------
 // READS
 // List ALL Owners -> receive GET method on /owners
 #[get("/owners")]
-pub async fn list_owners(db: Data<Database>) -> HttpResponse {
+pub async fn list_owners(db: web::Data<Database>) -> HttpResponse {
 
     match db.read_owners().await {
         Ok(vec_owner) => {
             // map the Vec<Owner> received from the database handler 'read_owners' into a vector of OwnerResponse, to avoid exposing mongodb objects
             let owner_responses = vec_owner.into_iter().map(|x| OwnerResponse::from(x)).collect::<Vec<OwnerResponse>>();
-            HttpResponse::Ok().json(owner_responses)
+            //HttpResponse::Ok().json(owner_responses)
+            JsonApiResponse::success(owner_responses)
         },
-        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+       // Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+       Err(app_error) => ErrorJsonApiResponse::internal_server_error(&app_error.to_string()),
     }
 }
 
 // List specific Owner -> receive GET method on /owners/{id}
 #[get("/owners/{id}")]
-pub async fn list_owner(path: web::Path<String>, db: web::Data<Database>, ) -> HttpResponse {
+pub async fn list_owner(path: web::Path<String>, db: web::Data<Database>) -> HttpResponse {
+    
     // id received must be String because it is a Hexadecimal string
     let id_str = path.into_inner();
-
+  
     match db.read_owner(&id_str).await {
-        Some(owner) =>  {
-            HttpResponse::Ok().json(OwnerResponse::from(owner))
+        Ok(owner) =>  {
+           // HttpResponse::Ok().json(OwnerResponse::from(owner))
+           JsonApiResponse::success(OwnerResponse::from(owner))
         },
-       _ => HttpResponse::NotFound().body("{}"),
+        Err(app_error) => ErrorJsonApiResponse::not_found(&app_error.to_string()),
+       // Err(e) => HttpResponse::NotFound().body("{}"),
     }
 }
 // -----------------------------------
 // UPDATES
 // Update specific Owner -> receive PUT method on /owners/{id} + a Json data representing a OwnerUpdateRequest Object
 #[put("/owners/{id}")]
-pub async fn update_owner(path: web::Path<String>, db: web::Data<Database>, request: Json<OwnerUpdateRequest>, ) -> HttpResponse {
+pub async fn update_owner(path: web::Path<String>, db: web::Data<Database>, request: Result<Json<OwnerUpdateRequest>, actix_web::Error>, ) -> HttpResponse {
+    // initially the request wasnt a Result, but I wrapped it into a Result in order to validate it here
+   
+    // Validating request
+    let owner_update = match request {
+        Ok(update) => update.into_inner(),
+        Err(_) => { return ErrorJsonApiResponse::bad_request("Invalid input: could not parse JSON payload."); }
+    };
+    // Validate that at least one field is Some
+    if owner_update.name.is_none()
+        && owner_update.email.is_none()
+        && owner_update.phone.is_none()
+        && owner_update.address.is_none()
+    {
+        return ErrorJsonApiResponse::bad_request("No fields provided to update.");
+    }
 
     let owner_id = path.into_inner();
     println!("Updating id {:?}", owner_id);
-    match db.update_owner(&owner_id, request.into_inner()).await {
-        Ok(true) => HttpResponse::Ok().body("Owner updated"),
-        Ok(false) => HttpResponse::BadRequest().body("No valid fields provided or owner not found"),
-        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+
+    // Invoking database layer 
+    match db.update_owner(&owner_id, owner_update).await {
+        Ok(id) => JsonApiResponse::with_message(&format!("Owner Update Sucessful: {}", id)),
+        Err(app_error) => ErrorJsonApiResponse::internal_server_error(&app_error.to_string()),
     }
 }
 // -----------------------------------
@@ -111,9 +146,8 @@ pub async fn delete_owner(path: web::Path<String>, db: web::Data<Database>) -> H
     println!("Deleting id {:?}", owner_id);
 
     match db.delete_owner(&owner_id).await {
-        Ok(true) => HttpResponse::Ok().body("Owner deleted."),
-        Ok(false) => HttpResponse::BadRequest().body("No valid fields provided or owner not found"),
-        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+        Ok(id) => JsonApiResponse::with_message(&format!("Owner Deleted: {}", id)),
+        Err(app_error) => ErrorJsonApiResponse::internal_server_error(&app_error.to_string()),
     }
 }
 

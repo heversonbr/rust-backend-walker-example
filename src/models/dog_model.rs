@@ -9,7 +9,7 @@ use validator::Validate;
 pub struct Dog {
     pub _id: ObjectId,        
     pub owner: ObjectId,
-    pub name:  Option<String>,
+    pub name:  String,
     pub age:   Option<u8>,
     pub breed: Option<String>,
 }
@@ -20,8 +20,7 @@ pub struct Dog {
 pub struct DogRequest { 
     
     pub owner: String,
-    #[validate(length(min = 1))]
-    pub name:  Option<String>,
+    pub name:  String,
     pub age:   Option<u8>,
     pub breed: Option<String>,
 
@@ -47,7 +46,7 @@ impl TryFrom<DogRequest> for Dog{
 pub struct DogResponse {
     pub _id: String,        
     pub owner: String,
-    pub name:  Option<String>,
+    pub name:  String,
     pub age:   Option<u8>,
     pub breed: Option<String>,
 }

@@ -15,10 +15,10 @@ POST {{baseUrl}}/owners HTTP/1.1
 Content-Type: application/json
 
   {
-    "name": "eva",
-    "email": "eva@woof.net",
-    "phone": "111222",
-    "address": "bordeaux"
+    "name": "maria",
+    "email": "maria@joao.net",
+    "phone": "22222222",
+    "address": "Lisboa"
   }
 
 ###
@@ -60,10 +60,10 @@ PUT {{baseUrl}}/owners/{{update_owner_id}}
 Content-Type: application/json
 
   {
-    //"name": "Nadine",
-    //"email": "nadine@nadine.com",
-    "phone": "0707070707"
-    //"address": "Morlaix"
+    "name": "Nico",
+    "email": "nico@nico.com",
+    "phone": "1111111111",
+    "address": "Bruz"
   }
 ###
 
@@ -72,7 +72,7 @@ Content-Type: application/json
 //        -> receive DELETE method on /owners/{id}
 #----------------------
 ###
-@delete_owner_id=68163e6e42b784266124d515
+@delete_owner_id=681b71f0795a6b1379e97178
 
 DELETE {{baseUrl}}/owners/{{delete_owner_id}}
 Content-Type: application/json

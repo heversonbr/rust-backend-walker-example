@@ -1,0 +1,79 @@
+# These are the API requests used to test the backend 
+
+@baseUrl = http://localhost:8080
+
+#**********************
+# *** SITTER *** 
+#**********************
+
+#----------------------
+# CREATE new Sitter 
+// -> receive POST method on /sitters + a Json SitterRequest obj
+#----------------------
+###
+POST {{baseUrl}}/sitters HTTP/1.1
+Content-Type: application/json
+
+  {
+    "firstname": "bla",
+    "lastname": "ble",
+    "gender": "male",
+    "email": "theo@rep.net",
+    "phone": "3333333333",
+    "address": "Brest"
+  }
+
+###
+
+#----------------------
+# READ: Get ALL Sitters from the Sitter Collection 
+//      -> receive GET method on /sitters
+#----------------------
+###
+
+GET {{baseUrl}}/sitters
+Content-Type: application/json
+###
+
+#----------------------
+# READ: Get a single Sitter from the Sitter Collection 
+//      -> receive GET method on /sitters/{id}
+#----------------------
+###
+@read_owner_id=681a9b4a3061fdde051533fe
+
+GET {{baseUrl}}/sitters/{{read_owner_id}}
+Content-Type: application/json
+###
+
+
+#----------------------
+# UPDATE: Update any of the fields of a specific Document at Sitter Collection
+//         -> receive PUT method on /sitters/{id} 
+//            + a Json data representing a SitterUpdateRequest Object
+#----------------------
+###
+#change this variable to test:
+@update_owner_id=681a9b4a3061fdde051533fe
+
+PUT {{baseUrl}}/sitters/{{update_owner_id}}
+Content-Type: application/json
+
+  {
+    //"firstname": "Nadine",
+    //"email": "nadine@nadine.com",
+    "phone": "0808080808"
+    //"address": "Morlaix"
+  }
+###
+
+#----------------------
+# DELETE: Delete a specific owner using its identifier id
+//        -> receive DELETE method on /sitters/{id}
+#----------------------
+###
+@delete_owner_id=681a9f3c3061fdde05153400
+
+DELETE {{baseUrl}}/sitters/{{delete_owner_id}}
+Content-Type: application/json
+###

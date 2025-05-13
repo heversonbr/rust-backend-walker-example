@@ -1,0 +1,29 @@
+= Notes about response messages from backend to clients/frontends
+
+
+It is a best practice to send consistent JSON in all responses, including error cases.
+
+Mixing JSON and plain text (like "Owner updated" or error messages in .body(...)) is convenient for development, but in production APIs, it leads to:
+
+- Inconsistent client handling (parsing fails if response type is unpredictable)
+- Poor integration experience for frontend/mobile devs
+- Difficulties in error introspection/logging/debugging
+- Ambiguous API documentation
+
+
+*Best Practice Pattern*: Define a consistent JSON error/response wrapper and use this for both success and error replies.
+
+*Why This Matters*? 
+
+- Clients always expect JSON, and consistent structure simplifies frontend code
+- Easy to version later (add status_code, timestamp, etc.)
+- Makes API self-documenting with tools like Swagger/OpenAPI
+
+Returning plain strings in .body() is OK for prototyping, but returning plain strings in .body() for some paths and .json() for others will lead to confusion or bugs if your client expects application/json but gets a string.
+
+*Recommendation*: 
+
+- Stick to JSON for all responses, even errors.
+- Create standard ApiResponse<T> or ErrorResponse types.
+- Set content type explicitly: .content_type("application/json") if needed.
+- Consider standardizing HTTP codes too (400 for bad input, 404 for missing resources, etc.)

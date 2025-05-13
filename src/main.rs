@@ -1,10 +1,19 @@
-use actix_web::{get, App, web::Data, HttpResponse, HttpServer, Responder};
-use routes::{booking_routes::{create_booking, delete_booking, list_booking, list_bookings, update_booking}, dog_routes::{create_dog, delete_dog, list_dog, list_dogs, update_dog}, owner_routes::{create_owner, delete_owner, list_owner, list_owners, update_owner}};
-use services::db::Database;
+use log::{ info,  LevelFilter};  // A lightweight logging facade for Rust
+use env_logger::{Builder, Target};  // Builder to configure logging programatically; Target to choose output
+
+
+use actix_web::{get, App, web, HttpResponse, HttpServer, Responder};
+use routes::{booking_routes::{create_booking, delete_booking, list_booking, list_bookings, update_booking}, 
+                 dog_routes::{create_dog, delete_dog, list_dog, list_dogs, update_dog}, 
+                 owner_routes::{create_owner, delete_owner, list_owner, list_owners, update_owner}, 
+                 sitter_routes::{create_sitter, delete_sitter, list_sitter, list_sitters, update_sitter}};
+
 
 mod services;
 mod models;
 mod routes;
+mod json_response;
+mod app_errors;
 
 
 //  use environment variables defined in a .env file with the help of the dotenv crate. 
@@ -17,23 +26,32 @@ async fn hello() -> impl Responder{
     HttpResponse::Ok().body("Hello from App Root /")
 }
 
+fn set_logger() {
+    let mut builder = Builder::new();                // Setup config
+    builder.target(Target::Stdout);                  // Set output to stdout
+    builder.filter_level(LevelFilter::Debug);         // Choose level
+    builder.init();                                  // Register global logger
+} // builder is dropped here — but the logger is now active globally
+
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
 
     dotenv().ok(); // Load variables from `.env` into the environment
- 
+    set_logger();  // set and init logger
+
+
     let address = "localhost";
     let port = 8080;
 
-    let db = Database::init().await;
-    let db_data = Data::new(db);
+    let db = services::db::Database::init().await;
+    let db_data = web::Data::new(db);        // type: web::Data<mongodb::Database>
 
-    println!("Starting server at {} , port: {}", address, port);
+    info!("Starting server at {} , port: {}", address, port);
     HttpServer::new(move || App::new()
-        .app_data(db_data.clone())
+        .app_data(db_data.clone())     // register it here 
         .service(create_owner)
-        .service(list_owners)
+        //.service(list_owners)
         .service(list_owner)
         .service(update_owner)
         .service(delete_owner)
@@ -47,9 +65,14 @@ async fn main() -> std::io::Result<()> {
         .service(list_booking)
         .service(update_booking)
         .service(delete_booking)
-            )
-            .bind((address, port))?
-            .run()
-            .await
+        .service(create_sitter)
+        .service(list_sitters)
+        .service(list_sitter)
+        .service(update_sitter)
+        .service(delete_sitter)
+        )
+        .bind((address, port))?
+        .run()
+        .await
 
 }

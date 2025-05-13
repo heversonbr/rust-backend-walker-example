@@ -16,15 +16,15 @@ POST {{baseUrl}}/dogs HTTP/1.1
 Content-Type: application/json
 
   {
-    "owner": "68163e6e42b784266124d515",
-    "name": "Charlie",
-    "age": 6,
-    "breed": "Poodle"
+    "owner": "681dc7ce9b5a55eaf9924521",
+    "name": "Blublubli",
+    "age": 3,
+    "breed": "Braque"
   }
 ###
 
 #----------------------
-# READ: Get all Dogs from the Dog Collection 
+# READ: Get ALL Dogs from the Dog Collection 
 //      -> receive GET method on /dogs
 #----------------------
 ###
@@ -33,11 +33,11 @@ Content-Type: application/json
 ###
 
 #----------------------
-# READ: Get a single Dog from the dog Collection 
+# READ: Get a SINGLE Dog from the dog Collection 
 //      -> receive GET method on /dogs/{id} 
 #----------------------
 ###
-@read_dog_id=6812a5dd89fd46e7bc07c6e8
+@read_dog_id=6816404642b784266124d516
 
 GET {{baseUrl}}/dogs/{{read_dog_id}}
 Content-Type: application/json
@@ -50,17 +50,19 @@ Content-Type: application/json
 //        + a Json data representing a DogUpdateRequest Object
 #----------------------
 ###
-@dog_update_id=6816405d42b784266124d518
-
+@dog_update_id=6812a58d89fd46e7bc07c6
+//68124a7c0f0bb4d8a0db6572
 PUT {{baseUrl}}/dogs/{{dog_update_id}} HTTP/1.1
 Content-Type: application/json
 
   {
-//    "owner": "68163e6e42b784266124d515",
-//    "name": "Charlie",
-    "age": 10,
-    "breed": "Poodle"
+    //owner is a required field, the others are optional
+    "owner": "",
+    // "name": "Charlie",
+    "age": 6,
+    "breed": "Braque"
   }
+// remmenber : last line cannot have comma in it !
 ###
 
 #----------------------
