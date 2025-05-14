@@ -1,1 +1,1 @@
-= Building backend with Rust
+= Just a simple example of building a backend with Rust and mongodb
