@@ -11,9 +11,10 @@ use std::{env, process};
 
 
 // Remind: Clean and idiomatic approach in Rust:
-// • The DB layer (services/db.rs) stays focused purely on DB logic and returns Result<T, mongodb::error::Error>.
-// • The routing layer handles interpreting DB errors and mapping them into proper HTTP responses (e.g., 404 Not Found, 500 Internal Server Error).
-// That separation of concerns is a great design.
+// - The DB layer (services/db.rs) stays focused purely on DB logic and returns Result<T, Error>.
+//       note: to make the code easir to read, the logic is sub-divided in different modules (check mod.rs), each one representing a data model 
+// - The routing layer handles interpreting DB errors and mapping them into proper HTTP responses (e.g., 404 Not Found, 500 Internal Server Error).
+// This separation of concerns makes the backend desing much clear. 
 
 #[allow(dead_code)]
 pub struct AppDatabase {
